@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#1b4332"/>
+  <!-- Leaf and Sprout Agro Icon -->
+  <path d="M256 96C256 96 280 160 280 220C280 260 256 300 256 416" stroke="#52b788" stroke-width="28" stroke-linecap="round"/>
+  <path d="M256 220C256 220 330 200 370 140C380 124 380 96 350 96C290 96 260 170 256 220Z" fill="#74c69d" stroke="#52b788" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M256 290C256 290 180 270 140 210C130 194 130 166 160 166C220 166 250 240 256 290Z" fill="#95d5b2" stroke="#52b788" stroke-width="12" stroke-linejoin="round"/>
+  <circle cx="256" cy="416" r="20" fill="#d8f3dc"/>
+  <!-- Subtle furrow lines -->
+  <path d="M120 420C170 400 342 400 392 420" stroke="#2d6a4f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M160 448C200 436 312 436 352 448" stroke="#2d6a4f" stroke-width="14" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,187 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access control and station assignment.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "role": {
+          "type": "string",
+          "enum": ["Administrator", "Field Officer", "Field Supervisor", "Registration Officer", "Warehouse Officer", "Management Viewer"]
+        },
+        "station": { "type": "string", "maxLength": 100 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "role", "active"]
+    },
+    "Farmer": {
+      "title": "Farmer",
+      "description": "Smallholder or commercial farmer profile registered in the agro network.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "registrationNumber": { "type": "string", "maxLength": 32 },
+        "fullName": { "type": "string", "maxLength": 120 },
+        "nationalId": { "type": "string", "maxLength": 32 },
+        "phone": { "type": "string", "maxLength": 24 },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "dateOfBirth": { "type": "string", "maxLength": 12 },
+        "community": { "type": "string", "maxLength": 80 },
+        "district": { "type": "string", "maxLength": 80 },
+        "cooperative": { "type": "string", "maxLength": 100 },
+        "primaryCrop": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["Active", "Pending Verification", "Suspended"] },
+        "photoUrl": { "type": "string", "maxLength": 500 },
+        "registeredBy": { "type": "string", "maxLength": 128 },
+        "registeredAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["registrationNumber", "fullName", "phone", "district", "status"]
+    },
+    "FarmPlot": {
+      "title": "FarmPlot",
+      "description": "GIS mapped agricultural field plot with polygon coordinates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "plotCode": { "type": "string", "maxLength": 32 },
+        "farmerId": { "type": "string", "maxLength": 64 },
+        "farmerName": { "type": "string", "maxLength": 120 },
+        "locationName": { "type": "string", "maxLength": 100 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "areaHectares": { "type": "number" },
+        "cropTypes": { "type": "string", "maxLength": 100 },
+        "soilType": { "type": "string", "maxLength": 50 },
+        "irrigationType": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["Active", "Fallow", "Harvested", "Inspection Due"] },
+        "coordinates": { "type": "string", "description": "GeoJSON coordinate array representation" },
+        "mappedBy": { "type": "string", "maxLength": 128 },
+        "mappedAt": { "type": "string" }
+      },
+      "required": ["plotCode", "farmerId", "latitude", "longitude", "areaHectares", "status"]
+    },
+    "FieldMonitoringLog": {
+      "title": "FieldMonitoringLog",
+      "description": "Agronomic field inspection and monitoring visit report.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "logNumber": { "type": "string", "maxLength": 32 },
+        "farmPlotId": { "type": "string", "maxLength": 64 },
+        "farmerId": { "type": "string", "maxLength": 64 },
+        "farmerName": { "type": "string", "maxLength": 120 },
+        "officerId": { "type": "string", "maxLength": 128 },
+        "officerName": { "type": "string", "maxLength": 100 },
+        "visitDate": { "type": "string", "maxLength": 20 },
+        "cropStage": { "type": "string", "maxLength": 50 },
+        "pestSeverity": { "type": "string", "enum": ["None", "Low", "Moderate", "Severe"] },
+        "weedPressure": { "type": "string", "enum": ["Clean", "Moderate", "Heavy"] },
+        "soilMoisture": { "type": "string", "enum": ["Adequate", "Dry", "Waterlogged"] },
+        "estimatedYieldBags": { "type": "number" },
+        "issuesDetected": { "type": "string", "maxLength": 500 },
+        "recommendations": { "type": "string", "maxLength": 500 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "gpsAccuracyMeters": { "type": "number" },
+        "photoUrl": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["Submitted", "Reviewed", "Action Required"] }
+      },
+      "required": ["logNumber", "farmPlotId", "farmerId", "officerId", "visitDate", "pestSeverity"]
+    },
+    "WarehouseItem": {
+      "title": "WarehouseItem",
+      "description": "Inventory master item specification for agricultural input or harvested produce.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "itemCode": { "type": "string", "maxLength": 32 },
+        "name": { "type": "string", "maxLength": 120 },
+        "category": { "type": "string", "enum": ["INPUT", "PRODUCE"] },
+        "subCategory": { "type": "string", "maxLength": 60 },
+        "unitOfMeasure": { "type": "string", "maxLength": 20 },
+        "reorderLevel": { "type": "number" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["itemCode", "name", "category", "unitOfMeasure", "active"]
+    },
+    "WarehouseTransaction": {
+      "title": "WarehouseTransaction",
+      "description": "Traceable inventory stock ledger movement record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "transactionNumber": { "type": "string", "maxLength": 32 },
+        "warehouseId": { "type": "string", "maxLength": 64 },
+        "itemId": { "type": "string", "maxLength": 64 },
+        "itemCode": { "type": "string", "maxLength": 32 },
+        "itemName": { "type": "string", "maxLength": 120 },
+        "transactionType": {
+          "type": "string",
+          "enum": ["RECEIPT", "ISSUE", "TRANSFER", "DISPATCH", "RETURN", "ADJUSTMENT"]
+        },
+        "quantity": { "type": "number" },
+        "batchNumber": { "type": "string", "maxLength": 40 },
+        "referenceDoc": { "type": "string", "maxLength": 60 },
+        "sourceDestination": { "type": "string", "maxLength": 100 },
+        "authorizedBy": { "type": "string", "maxLength": 100 },
+        "officerId": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string" },
+        "notes": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["transactionNumber", "warehouseId", "itemId", "transactionType", "quantity", "authorizedBy"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "System-wide immutable security and business event audit trail.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "timestamp": { "type": "string" },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 100 },
+        "actorRole": { "type": "string", "maxLength": 50 },
+        "action": { "type": "string", "maxLength": 100 },
+        "targetEntity": { "type": "string", "maxLength": 50 },
+        "targetId": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["timestamp", "actorUid", "action", "targetEntity"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "System user profiles with role definitions"
+    },
+    "/farmers/{farmerId}": {
+      "schema": "Farmer",
+      "description": "Smallholder farmer master registry records"
+    },
+    "/farmPlots/{plotId}": {
+      "schema": "FarmPlot",
+      "description": "Geolocated farm plots and boundary data"
+    },
+    "/fieldMonitoring/{logId}": {
+      "schema": "FieldMonitoringLog",
+      "description": "Field inspection and agronomic crop logs"
+    },
+    "/warehouseItems/{itemId}": {
+      "schema": "WarehouseItem",
+      "description": "Master catalog of agricultural inputs and produce items"
+    },
+    "/warehouseTransactions/{txId}": {
+      "schema": "WarehouseTransaction",
+      "description": "Immutable stock ledger journal entries"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "System audit trail records"
+    }
+  }
+}

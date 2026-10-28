@@ -1,0 +1,11 @@
+{
+  "name": "Glean Agro Operations",
+  "description": "Production-oriented agricultural operations management PWA for farmer registration, GIS farm mapping, field monitoring, and traceable warehouse inventory.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

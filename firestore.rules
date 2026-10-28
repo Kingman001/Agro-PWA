@@ -1,0 +1,201 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Security Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Role lookups from /users/$(request.auth.uid)
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasUserDoc() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserRole() {
+      return hasUserDoc() ? getUserData().role : '';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        getUserRole() == 'Administrator' ||
+        (request.auth.token.email != null && request.auth.token.email == 'Joshaku911@gmail.com')
+      );
+    }
+
+    function isFieldSupervisor() {
+      return isSignedIn() && (isAdmin() || getUserRole() == 'Field Supervisor');
+    }
+
+    function isFieldOfficer() {
+      return isSignedIn() && (isFieldSupervisor() || getUserRole() == 'Field Officer');
+    }
+
+    function isRegistrationOfficer() {
+      return isSignedIn() && (isFieldSupervisor() || getUserRole() == 'Registration Officer');
+    }
+
+    function isWarehouseOfficer() {
+      return isSignedIn() && (isAdmin() || getUserRole() == 'Warehouse Officer');
+    }
+
+    function isManagementViewer() {
+      return isSignedIn() && (
+        isAdmin() ||
+        isFieldSupervisor() ||
+        isWarehouseOfficer() ||
+        getUserRole() == 'Management Viewer'
+      );
+    }
+
+    // ----------------------------------------------------
+    // User Profiles Collection
+    // ----------------------------------------------------
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn() && (
+        (request.auth.uid == userId && incoming().role == 'Field Officer') ||
+        isAdmin()
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'station', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // Farmer Registry Collection
+    // ----------------------------------------------------
+    function isValidFarmer(data) {
+      return data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 120 &&
+             data.phone is string && data.phone.size() <= 24 &&
+             data.district is string && data.district.size() <= 80 &&
+             data.status in ['Active', 'Pending Verification', 'Suspended'];
+    }
+
+    match /farmers/{farmerId} {
+      allow get, list: if isSignedIn();
+      allow create: if (isAdmin() || isRegistrationOfficer() || isFieldOfficer()) &&
+                       isValidId(farmerId) && isValidFarmer(incoming());
+      allow update: if isSignedIn() && isValidFarmer(incoming()) && (
+        isAdmin() ||
+        isFieldSupervisor() ||
+        (isRegistrationOfficer() && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phone', 'community', 'district', 'cooperative', 'primaryCrop', 'photoUrl', 'updatedAt'])) ||
+        (isFieldOfficer() && incoming().diff(existing()).affectedKeys().hasOnly(['phone', 'primaryCrop', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // Farm Plots Collection
+    // ----------------------------------------------------
+    function isValidFarmPlot(data) {
+      return data.plotCode is string && data.plotCode.size() > 0 && data.plotCode.size() <= 32 &&
+             data.farmerId is string && data.farmerId.size() <= 64 &&
+             data.areaHectares is number && data.areaHectares >= 0 &&
+             data.status in ['Active', 'Fallow', 'Harvested', 'Inspection Due'];
+    }
+
+    match /farmPlots/{plotId} {
+      allow get, list: if isSignedIn();
+      allow create: if (isAdmin() || isFieldOfficer() || isFieldSupervisor()) &&
+                       isValidId(plotId) && isValidFarmPlot(incoming());
+      allow update: if isSignedIn() && isValidFarmPlot(incoming()) && (
+        isAdmin() ||
+        isFieldSupervisor() ||
+        (isFieldOfficer() && incoming().diff(existing()).affectedKeys().hasOnly(['cropTypes', 'soilType', 'irrigationType', 'status', 'coordinates', 'areaHectares', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // Field Monitoring Collection
+    // ----------------------------------------------------
+    function isValidMonitoringLog(data) {
+      return data.logNumber is string && data.logNumber.size() <= 32 &&
+             data.farmPlotId is string && data.farmPlotId.size() <= 64 &&
+             data.pestSeverity in ['None', 'Low', 'Moderate', 'Severe'] &&
+             data.status in ['Submitted', 'Reviewed', 'Action Required'];
+    }
+
+    match /fieldMonitoring/{logId} {
+      allow get, list: if isSignedIn();
+      allow create: if (isAdmin() || isFieldOfficer()) &&
+                       isValidId(logId) && isValidMonitoringLog(incoming());
+      allow update: if isSignedIn() && isValidMonitoringLog(incoming()) && (
+        isAdmin() ||
+        (isFieldSupervisor() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'recommendations', 'reviewedBy', 'reviewedAt'])) ||
+        (isFieldOfficer() && existing().officerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['issuesDetected', 'recommendations', 'photoUrl']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // Warehouse Master Items Collection
+    // ----------------------------------------------------
+    function isValidItem(data) {
+      return data.itemCode is string && data.itemCode.size() <= 32 &&
+             data.name is string && data.name.size() <= 120 &&
+             data.category in ['INPUT', 'PRODUCE'] &&
+             data.active is bool;
+    }
+
+    match /warehouseItems/{itemId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isWarehouseOfficer();
+    }
+
+    // ----------------------------------------------------
+    // Warehouse Traceable Transactions (Immutable Ledger)
+    // ----------------------------------------------------
+    function isValidWarehouseTx(data) {
+      return data.transactionNumber is string && data.transactionNumber.size() <= 32 &&
+             data.warehouseId is string && data.warehouseId.size() <= 64 &&
+             data.itemId is string && data.itemId.size() <= 64 &&
+             data.transactionType in ['RECEIPT', 'ISSUE', 'TRANSFER', 'DISPATCH', 'RETURN', 'ADJUSTMENT'] &&
+             data.quantity is number && data.quantity > 0 &&
+             data.authorizedBy is string && data.authorizedBy.size() <= 100;
+    }
+
+    match /warehouseTransactions/{txId} {
+      allow get, list: if isSignedIn();
+      // Ledger records are strictly append-only: create is allowed for warehouse staff, updates/deletes prohibited
+      allow create: if (isAdmin() || isWarehouseOfficer()) &&
+                       isValidId(txId) && isValidWarehouseTx(incoming());
+      allow update: if false; // Immutable ledger rule
+      allow delete: if isAdmin(); // Admin disaster recovery only
+    }
+
+    // ----------------------------------------------------
+    // Audit Logs Collection (Append-Only)
+    // ----------------------------------------------------
+    match /auditLogs/{logId} {
+      allow get, list: if isManagementViewer() || isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Strict immutable audit record
+    }
+  }
+}
